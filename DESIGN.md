@@ -5,13 +5,31 @@
 > - "OpenClaw Built This $250K Mission Control in a Single Prompt" (youtube.com/watch?v=aMQVcJHHRVM)
 > - "Openclaw: Mission Control + Agent Teams" (youtube.com/watch?v=GpQcz_eKiNo)
 
+**Deployment: LOCAL ONLY** — Runs exclusively on OptiPlex. No VPS, no tunnel, no public domain.
+
 ---
 
 ## Vision
 
-A unified operational dashboard where Hari (the OpenClaw agent) can build any tool needed on-the-fly, track all work, browse memories like a journal, manage sub-agents as a team, and visualize activity in a motivating interface.
+A unified operational dashboard running locally where Hari (the OpenClaw agent) can build any tool needed on-the-fly, track all work, browse memories like a journal, and visualize activity. Optimized for Adam's LAN-only workflow.
 
 **Core Principle:** Everything should be built via prompts, zero manual coding. The dashboard evolves with the workflow.
+
+---
+
+## Deployment Model: Local Only
+
+**Why local?**
+- Primary use is while working at the OptiPlex
+- Eliminates SSH tunnel complexity
+- No VPS deployment steps
+- Faster iteration (no rsync/deploy cycle)
+- No public exposure = simpler security model
+
+**Access:**
+- Local: `http://localhost:3000`
+- LAN: `http://10.0.0.171:3000` (from other devices on network)
+- No external access needed
 
 ---
 
@@ -66,9 +84,6 @@ A unified operational dashboard where Hari (the OpenClaw agent) can build any to
 - Sync status changes back to BTG_QUEUE.md
 - Auto-link projects to their BTG queue entry
 
-**Display Columns:**
-| ID | Title | Category | Status | Added | Related |
-
 ---
 
 ### 4. Memory Browser
@@ -114,7 +129,6 @@ A unified operational dashboard where Hari (the OpenClaw agent) can build any to
   - Model used (actual vs requested)
   - Spawn time, duration, status
   - Parent session link
-  - Cost/usage metrics (if available)
 - **Model Attribution** — Per-message model proof from JSONL
 - **Filter/Search** — By model, agent type, status, date range
 
@@ -122,18 +136,6 @@ A unified operational dashboard where Hari (the OpenClaw agent) can build any to
 - Polls OpenClaw sessions API
 - Reads session history from JSONL
 - Links sub-agents to parent sessions
-- Shows spawn relationships
-
-**Display:**
-```
-Session: telegram:-5184362671 (Mission Control)
-├── Model: kimi-coding/k2p5
-├── Started: 2026-03-15 16:20 EDT
-├── Status: Active
-└── Sub-Agents:
-    ├── Spawn #1 (Builder) — gpt-5.4 — 12min ago — Running
-    └── Spawn #2 (Researcher) — kimi-coding/k2p5 — 5min ago — Complete
-```
 
 ---
 
@@ -146,19 +148,42 @@ Session: telegram:-5184362671 (Mission Control)
 
 ## Technical Architecture
 
-### Stack Decision
+### Stack
 
-| Option | Pros | Cons |
-|--------|------|------|
-| **Next.js + React** (Alex Finn) | Modern, component-based, good for dashboards | Requires Node.js, build step |
-| **Lovable.dev** (Alex Finn alt) | Fast visual building, hosted | Less control, external dependency |
-| **Flask + Vanilla JS** (Current) | Simple, fits existing infra | Manual UI work |
+| Layer | Technology | Notes |
+|-------|------------|-------|
+| **Frontend** | Next.js 15 + React + Tailwind + shadcn/ui | Modern, component-based |
+| **Backend** | Node.js Express | Reuse existing collector patterns |
+| **Database** | SQLite | Single file, no separate service |
+| **Collector** | Node.js script | Polls OpenClaw CLI, writes to SQLite |
 
-**Decision:** Start with **Next.js + React** for frontend, keep existing **Express API** pattern for backend.
+### Why Not Flask/Vanilla JS?
 
-### Backend (API)
+Could do it, but Next.js gives us:
+- Modern component architecture
+- Built-in routing
+- Excellent UI component library (shadcn)
+- Hot reload for fast iteration
+- Still runs locally just fine
 
-**Technology:** Node.js Express (proven, fits current collector pattern)
+### Simplified Deployment (Local Only)
+
+```
+OptiPlex (terminus-OptiPlex-7050)
+├── OpenClaw Gateway (port 18789)
+├── MC Collector (polls CLI → SQLite)
+├── MC API (Express, port 3001)
+├── MC Frontend (Next.js dev server, port 3000)
+└── SQLite DB (single file)
+```
+
+**No tunnel. No VPS. No public domain.**
+
+---
+
+## Backend (API)
+
+**Technology:** Node.js Express
 
 **Endpoints:**
 ```
@@ -176,7 +201,7 @@ GET  /api/subagents           → Sub-agent list
 GET  /api/activity            → Live activity feed
 ```
 
-**Database:** SQLite (proven, simple, single file)
+**Database:** SQLite
 
 **Tables:**
 - `tasks` — Kanban board state
@@ -186,7 +211,9 @@ GET  /api/activity            → Live activity feed
 - `subagents` — Sub-agent spawn records
 - `activity_log` — Real-time activity stream
 
-### Frontend
+---
+
+## Frontend
 
 **Technology:** Next.js 15 + React + Tailwind CSS + shadcn/ui
 
@@ -201,73 +228,68 @@ GET  /api/activity            → Live activity feed
 - `/sessions` — Sessions & Sub-Agents (with model use)
 - `/sessions/[id]` — Session detail view
 
-**State:** SWR for data fetching, real-time updates via polling
+**State:** SWR for data fetching, polling for updates
 
 ---
 
-## Data Flow
+## Local Dev Workflow
 
+```bash
+# Terminal 1: Start the API
+cd ~/mission-control-v2-local/api
+npm run dev          # Express on port 3001
+
+# Terminal 2: Start the collector
+cd ~/mission-control-v2-local/collector
+npm start            # Polls OpenClaw, writes to SQLite
+
+# Terminal 3: Start the frontend
+cd ~/mission-control-v2-local/web
+npm run dev          # Next.js on port 3000
+
+# Access:
+# → http://localhost:3000 (local)
+# → http://10.0.0.171:3000 (LAN)
 ```
-OpenClaw Gateway
-       ↓
-MC Collector (polls CLI) → SQLite
-       ↓
-MC API (Express) ←→ Next.js Frontend
-       ↓
-User Dashboard
-```
-
-**Collector Responsibilities:**
-- Poll OpenClaw for: sessions, spawns, crons, health
-- Write to SQLite
-- Parse BTG_QUEUE.md for project data
-- Trigger activity log entries
-
-**API Responsibilities:**
-- Serve data to frontend
-- Handle task mutations
-- Proxy to OpenClaw when needed
-- Write BTG status changes back to markdown
 
 ---
 
-## Build Phases
+## Build Phases (Accelerated — Local Only)
 
-### Phase 1: Foundation (Week 1)
-- [ ] Set up Next.js project structure
-- [ ] Create basic layout (sidebar navigation)
-- [ ] Build Task Board (Kanban with drag-drop)
-- [ ] Create Express API with SQLite
-- [ ] Port/adapt existing collector logic
-- [ ] Deploy initial version to VPS
+### Phase 1: Foundation (3-4 days)
+- [ ] Initialize Next.js project with shadcn/ui
+- [ ] Set up basic layout with sidebar navigation
+- [ ] Build Express API with SQLite
+- [ ] Build Task Board (Kanban)
+- [ ] Port collector from v1 (simplified, no VPS concerns)
 
-### Phase 2: Knowledge Layer (Week 2)
+### Phase 2: Knowledge Layer (3-4 days)
 - [ ] Memory Browser (read from `memory/` files)
-- [ ] Documents Repository
-- [ ] Project Screen + BTG Queue integration
+- [ ] Documents Repository (scan workspace)
+- [ ] Project Screen + BTG Queue integration (read/write BTG_QUEUE.md)
 - [ ] Calendar/Cron view
 
-### Phase 3: Session & Agent Visibility (Week 3)
+### Phase 3: Session & Agent Visibility (3-4 days)
 - [ ] Sessions list with active/recent
 - [ ] Session detail view (conversation history)
 - [ ] Sub-Agent tracking with model attribution
 - [ ] Model use metrics/display
 
-### Phase 4: Polish (Week 4)
+### Phase 4: Polish (2-3 days)
 - [ ] Mobile responsive
 - [ ] Search across all content
 - [ ] Performance optimization
-- [ ] Real-time updates (WebSocket or polling)
+- [ ] Auto-start with systemd (optional)
+
+**Total: ~2 weeks for full feature set**
 
 ---
 
 ## Reverse Prompting Strategy
 
-Per Alex Finn's advice — after initial build, use reverse prompting to discover custom tools:
+After initial build, use reverse prompting to discover custom tools:
 
 > "Based on what you know about me, our workflows, our mission statement, and our goals — what custom tools should we build in Mission Control that would make our work easier?"
-
-This should yield tools specific to Adam's needs beyond the generic pattern.
 
 ---
 
@@ -275,12 +297,12 @@ This should yield tools specific to Adam's needs beyond the generic pattern.
 
 | External System | Integration |
 |-----------------|-------------|
-| OpenClaw Gateway | Collector polls for data |
-| BTG Queue | Read/write `BTG_QUEUE.md` |
-| Calendar Primary | Cron jobs appear on calendar |
+| OpenClaw Gateway | Collector polls local CLI |
+| BTG Queue | Read/write `~/.openclaw/workspace/BTG_QUEUE.md` |
+| Calendar Primary | Cron jobs from local OpenClaw |
 | GitHub | Projects link to repos |
-| Telegram | Activity notifications |
-| Memory System | Read `memory/*.md` files |
+| Memory System | Read `~/.openclaw/workspace/memory/*.md` |
+| Workspace Docs | Scan `~/.openclaw/workspace/` for docs |
 
 ---
 
@@ -292,18 +314,19 @@ This should yield tools specific to Adam's needs beyond the generic pattern.
 4. **Focus:** Projects don't stall without visibility
 5. **BTG Sync:** Queue status is always current
 6. **Session Tracking:** Know which model handled which session
+7. **Local Speed:** No deploy cycle, instant iteration
 
 ---
 
 ## Open Questions
 
-1. Should we keep the existing collector or rebuild it?
-2. Real-time updates: polling vs WebSocket?
-3. Document storage: parse markdown in DB or scan filesystem?
-4. BTG Queue: read-only or two-way sync?
+1. Collector: port v1 or rewrite fresh?
+2. Real-time updates: polling sufficient or want WebSocket?
+3. BTG Queue: read-only first or two-way sync from start?
+4. Auto-start: systemd service or manual start?
 
 ---
 
 *Design based on Alex Finn Mission Control patterns*
-*Modified for BTG workflow — Sessions & Sub-Agent focus*
+*Modified for BTG workflow — Local-only deployment*
 *Created: 2026-03-15*

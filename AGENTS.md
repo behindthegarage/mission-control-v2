@@ -11,8 +11,14 @@
 | Environment | Host | Path |
 |-------------|------|------|
 | **Local Dev** | terminus-OptiPlex-7050 | `/home/openclaw/mission-control-v2-local` |
-| **VPS Runtime** | p5gHxcyh7WDx (162.212.153.134) | `/home/openclaw/mission-control-v2/` |
+| **Production** | terminus-OptiPlex-7050 | Same as dev (local only) |
 | **Version Control** | GitHub | `behindthegarage/mission-control-v2` |
+
+**Access:**
+- Local: `http://localhost:3000`
+- LAN: `http://10.0.0.171:3000`
+
+**Note:** Local-only deployment. No VPS, no tunnel, no public domain.
 
 ## Setup Commands
 
@@ -40,23 +46,27 @@ curl http://localhost:5000/health
 
 ## Deployment
 
-**Model:** Controlled VPS pull (manual deploy after GitHub push)
+**Model:** Local-only (no VPS, no tunnel)
+
+Since Mission Control v2 runs exclusively on the OptiPlex, deployment is simply:
 
 ```bash
 # 1. Edit locally, test
-# 2. Commit and push
+npm run dev
+
+# 2. Commit and push (for backup/version control)
 git add .
 git commit -m "Description of changes"
 git push origin main
 
-# 3. SSH to VPS and deploy
-ssh openclaw@162.212.153.134
-cd /home/openclaw/mission-control-v2
-git pull origin main
-# (Add service restart if applicable)
+# 3. Production = same as dev (just run on port 3000)
+# No VPS deploy step needed!
+```
 
-# 4. Verify
-curl https://your-domain.com/health
+**Optional:** Set up systemd service for auto-start on boot:
+```bash
+sudo systemctl enable mc-v2.service
+sudo systemctl start mc-v2.service
 ```
 
 ## Verification Checklist
