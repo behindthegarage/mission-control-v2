@@ -9,13 +9,13 @@
 
 ## Vision
 
-A unified operational dashboard where Hari (the OpenClaw agent) can build any tool needed on-the-fly, track all work, browse memories like a journal, manage sub-agents as a team, and visualize activity in a fun, motivating interface.
+A unified operational dashboard where Hari (the OpenClaw agent) can build any tool needed on-the-fly, track all work, browse memories like a journal, manage sub-agents as a team, and visualize activity in a motivating interface.
 
 **Core Principle:** Everything should be built via prompts, zero manual coding. The dashboard evolves with the workflow.
 
 ---
 
-## Core Components (Alex Finn Pattern)
+## Core Components
 
 ### 1. Task Board (Kanban)
 **Purpose:** Track everything Hari is doing with visibility and autonomy.
@@ -32,6 +32,8 @@ A unified operational dashboard where Hari (the OpenClaw agent) can build any to
 - Tasks move automatically as work progresses
 - Human review queue for approval
 
+---
+
 ### 2. Calendar / Cron View
 **Purpose:** Confirm OpenClaw is being proactive, visualize scheduled work.
 
@@ -45,18 +47,29 @@ A unified operational dashboard where Hari (the OpenClaw agent) can build any to
 - Reads from OpenClaw cron system
 - Shows upcoming deadlines and reminders
 
-### 3. Project Screen
-**Purpose:** Track major projects, prevent distraction, maintain focus.
+---
+
+### 3. Project Screen + BTG Queue Integration
+**Purpose:** Track major projects, prevent distraction, maintain focus — **with BTG queue as the source of truth**.
 
 **Features:**
-- List of all active projects with progress indicators
-- Link tasks, memories, documents to each project
+- BTG Queue view — all queue items with status (⏳/✅/~~archived~~)
+- Project cards linked to BTG items
+- Progress indicators per project
 - "Stalled project" detection (no activity in N days)
-- Quick actions per project
+- Quick actions: promote to active, archive, create task
+- Filter by: active, pending, resolved, archived
 
-**Integration:**
-- Links to BTG queue/projects
-- Hooks into task board, memory browser, documents
+**BTG Integration:**
+- Read directly from `BTG_QUEUE.md`
+- Parse markdown table format
+- Sync status changes back to BTG_QUEUE.md
+- Auto-link projects to their BTG queue entry
+
+**Display Columns:**
+| ID | Title | Category | Status | Added | Related |
+
+---
 
 ### 4. Memory Browser
 **Purpose:** Browse OpenClaw memories like a journal, find past conversations.
@@ -70,6 +83,8 @@ A unified operational dashboard where Hari (the OpenClaw agent) can build any to
 **Integration:**
 - Reads from `memory/YYYY-MM-DD.md` files
 - Links memories to projects and tasks
+
+---
 
 ### 5. Documents Repository
 **Purpose:** Central home for all docs created by Hari (PRDs, plans, drafts, etc.).
@@ -85,33 +100,47 @@ A unified operational dashboard where Hari (the OpenClaw agent) can build any to
 - Auto-captures docs from sessions
 - Links to projects and memories
 
-### 6. Team / Org Chart
-**Purpose:** Visualize agent hierarchy, roles, and mission.
+---
+
+### 6. Sessions & Sub-Agent Component (with Model Use)
+**Purpose:** Track all active and recent sessions with full model attribution.
 
 **Features:**
-- Main agent (Hari) at top
-- Sub-agents with roles (researcher, coder, writer, etc.)
-- Device/model info for each agent
-- Status indicators (active, idle, paused)
-- **Mission Statement** — top-level goal all agents work toward
+- **Active Sessions** — Live sessions currently running
+- **Recent Sessions** — Completed/ended sessions (last 24h/7d/30d)
+- **Session Detail View** — Full conversation history, tool calls, model overrides
+- **Sub-Agent Tracking** — Spawned sub-agents with:
+  - Agent role/purpose
+  - Model used (actual vs requested)
+  - Spawn time, duration, status
+  - Parent session link
+  - Cost/usage metrics (if available)
+- **Model Attribution** — Per-message model proof from JSONL
+- **Filter/Search** — By model, agent type, status, date range
 
 **Integration:**
-- Pulls from OpenClaw sub-agent list
-- Shows spawn history
-- Model attribution per agent
+- Polls OpenClaw sessions API
+- Reads session history from JSONL
+- Links sub-agents to parent sessions
+- Shows spawn relationships
 
-### 7. Pixel Art Office (Optional but Fun)
-**Purpose:** Visual representation of agents working. Purely motivational.
+**Display:**
+```
+Session: telegram:-5184362671 (Mission Control)
+├── Model: kimi-coding/k2p5
+├── Started: 2026-03-15 16:20 EDT
+├── Status: Active
+└── Sub-Agents:
+    ├── Spawn #1 (Builder) — gpt-5.4 — 12min ago — Running
+    └── Spawn #2 (Researcher) — kimi-coding/k2p5 — 5min ago — Complete
+```
 
-**Features:**
-- 2D pixel art office view
-- Agents move to desks when working
-- Water cooler conversations between agents
-- Visual confirmation of activity
+---
 
-**Integration:**
-- Reads agent activity from task board
-- Updates in real-time
+## Removed Components (from Alex Finn original)
+
+- ~~Team / Org Chart~~ — Not needed for current workflow
+- ~~Pixel Art Office~~ — Removed for scope focus
 
 ---
 
@@ -138,10 +167,12 @@ GET  /api/tasks               → Task board data
 POST /api/tasks               → Create new task
 PUT  /api/tasks/:id           → Update task status
 GET  /api/calendar            → Cron/scheduled tasks
-GET  /api/projects            → Project list
+GET  /api/projects            → Project list + BTG queue
 GET  /api/memories            → Memory search/browse
 GET  /api/documents           → Document list
-GET  /api/team                → Agent/sub-agent list
+GET  /api/sessions            → Active/recent sessions
+GET  /api/sessions/:id        → Session detail
+GET  /api/subagents           → Sub-agent list
 GET  /api/activity            → Live activity feed
 ```
 
@@ -149,8 +180,10 @@ GET  /api/activity            → Live activity feed
 
 **Tables:**
 - `tasks` — Kanban board state
-- `projects` — Project metadata
+- `projects` — Project metadata (synced with BTG)
 - `documents` — Doc metadata (content stored as files)
+- `sessions` — Session metadata from OpenClaw
+- `subagents` — Sub-agent spawn records
 - `activity_log` — Real-time activity stream
 
 ### Frontend
@@ -158,15 +191,15 @@ GET  /api/activity            → Live activity feed
 **Technology:** Next.js 15 + React + Tailwind CSS + shadcn/ui
 
 **Pages:**
-- `/` — Dashboard overview (stats, recent activity)
+- `/` — Dashboard overview (stats, recent activity, active sessions)
 - `/tasks` — Task board (Kanban)
 - `/calendar` — Calendar/cron view
-- `/projects` — Project list
+- `/projects` — Project list + BTG Queue integration
 - `/projects/[id]` — Project detail
 - `/memories` — Memory browser
 - `/documents` — Document repository
-- `/team` — Team/org chart
-- `/office` — Pixel art office (optional)
+- `/sessions` — Sessions & Sub-Agents (with model use)
+- `/sessions/[id]` — Session detail view
 
 **State:** SWR for data fetching, real-time updates via polling
 
@@ -187,41 +220,44 @@ User Dashboard
 **Collector Responsibilities:**
 - Poll OpenClaw for: sessions, spawns, crons, health
 - Write to SQLite
+- Parse BTG_QUEUE.md for project data
 - Trigger activity log entries
 
 **API Responsibilities:**
 - Serve data to frontend
 - Handle task mutations
 - Proxy to OpenClaw when needed
+- Write BTG status changes back to markdown
 
 ---
 
-## Build Phases (Alex Finn 30-Day Pattern)
+## Build Phases
 
 ### Phase 1: Foundation (Week 1)
 - [ ] Set up Next.js project structure
 - [ ] Create basic layout (sidebar navigation)
 - [ ] Build Task Board (Kanban with drag-drop)
-- [ ] Integrate with existing collector data
-- [ ] Deploy to VPS
+- [ ] Create Express API with SQLite
+- [ ] Port/adapt existing collector logic
+- [ ] Deploy initial version to VPS
 
 ### Phase 2: Knowledge Layer (Week 2)
 - [ ] Memory Browser (read from `memory/` files)
-- [ ] Documents Repository (scan workspace docs)
-- [ ] Project Screen
+- [ ] Documents Repository
+- [ ] Project Screen + BTG Queue integration
 - [ ] Calendar/Cron view
 
-### Phase 3: Agent Orchestration (Week 3)
-- [ ] Team/Org Chart
-- [ ] Mission Statement display
-- [ ] Activity feed
-- [ ] Sub-agent management
+### Phase 3: Session & Agent Visibility (Week 3)
+- [ ] Sessions list with active/recent
+- [ ] Session detail view (conversation history)
+- [ ] Sub-Agent tracking with model attribution
+- [ ] Model use metrics/display
 
 ### Phase 4: Polish (Week 4)
-- [ ] Pixel Art Office (if time)
-- [ ] Mobile responsiveness
+- [ ] Mobile responsive
 - [ ] Search across all content
 - [ ] Performance optimization
+- [ ] Real-time updates (WebSocket or polling)
 
 ---
 
@@ -231,7 +267,7 @@ Per Alex Finn's advice — after initial build, use reverse prompting to discove
 
 > "Based on what you know about me, our workflows, our mission statement, and our goals — what custom tools should we build in Mission Control that would make our work easier?"
 
-This should yield tools specific to Adam's needs beyond the generic Alex Finn pattern.
+This should yield tools specific to Adam's needs beyond the generic pattern.
 
 ---
 
@@ -240,10 +276,11 @@ This should yield tools specific to Adam's needs beyond the generic Alex Finn pa
 | External System | Integration |
 |-----------------|-------------|
 | OpenClaw Gateway | Collector polls for data |
-| BTG Queue | Projects sync to task board |
+| BTG Queue | Read/write `BTG_QUEUE.md` |
 | Calendar Primary | Cron jobs appear on calendar |
 | GitHub | Projects link to repos |
 | Telegram | Activity notifications |
+| Memory System | Read `memory/*.md` files |
 
 ---
 
@@ -253,7 +290,8 @@ This should yield tools specific to Adam's needs beyond the generic Alex Finn pa
 2. **Autonomy:** Hari picks up tasks from board without prompting
 3. **Memory:** Can find any past conversation or doc in < 30 seconds
 4. **Focus:** Projects don't stall without visibility
-5. **Fun:** Actually want to check the dashboard
+5. **BTG Sync:** Queue status is always current
+6. **Session Tracking:** Know which model handled which session
 
 ---
 
@@ -262,9 +300,10 @@ This should yield tools specific to Adam's needs beyond the generic Alex Finn pa
 1. Should we keep the existing collector or rebuild it?
 2. Real-time updates: polling vs WebSocket?
 3. Document storage: parse markdown in DB or scan filesystem?
-4. Pixel art office: worth the effort or nice-to-have?
+4. BTG Queue: read-only or two-way sync?
 
 ---
 
 *Design based on Alex Finn Mission Control patterns*
+*Modified for BTG workflow — Sessions & Sub-Agent focus*
 *Created: 2026-03-15*
