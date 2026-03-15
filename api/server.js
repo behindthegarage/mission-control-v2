@@ -46,6 +46,7 @@ app.use((req, res, next) => {
 app.use('/api/health', healthRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/sessions', sessionsRoutes);
+app.use('/api/subagents', subagentsRoutes);
 app.use('/api/projects', projectsRoutes);
 app.use('/api/activity', activityRoutes);
 app.use('/api/documents', documentsRoutes);
@@ -132,3 +133,4 @@ process.on('SIGINT', async () => {
 });
 
 startServer();
+tServer();

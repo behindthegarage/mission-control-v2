@@ -28,8 +28,23 @@ export const tasksAPI = {
 
 // Sessions API
 export const sessionsAPI = {
-  list: () => fetchAPI('/api/sessions'),
+  list: (params?: { filter?: 'all' | 'active' | 'recent24h' | 'recent7d' | 'recent30d', search?: string, model?: string, limit?: number, offset?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.filter) query.append('filter', params.filter);
+    if (params?.search) query.append('search', params.search);
+    if (params?.model) query.append('model', params.model);
+    if (params?.limit) query.append('limit', params.limit.toString());
+    if (params?.offset) query.append('offset', params.offset.toString());
+    return fetchAPI(`/api/sessions?${query.toString()}`);
+  },
   get: (id: string) => fetchAPI(`/api/sessions/${id}`),
+  getMessages: (id: string, params?: { limit?: number, offset?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.limit) query.append('limit', params.limit.toString());
+    if (params?.offset) query.append('offset', params.offset.toString());
+    return fetchAPI(`/api/sessions/${id}/messages?${query.toString()}`);
+  },
+  getModels: () => fetchAPI('/api/sessions/models/list'),
 };
 
 // Projects API
@@ -99,4 +114,21 @@ export const calendarAPI = {
 // Health check
 export const healthAPI = {
   check: () => fetchAPI('/api/health'),
+};
+
+// Subagents API
+export const subagentsAPI = {
+  list: (params?: { status?: string; model?: string; parent_session?: string; date_from?: string; date_to?: string; limit?: number; offset?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.status) query.append('status', params.status);
+    if (params?.model) query.append('model', params.model);
+    if (params?.parent_session) query.append('parent_session', params.parent_session);
+    if (params?.date_from) query.append('date_from', params.date_from);
+    if (params?.date_to) query.append('date_to', params.date_to);
+    if (params?.limit) query.append('limit', params.limit.toString());
+    if (params?.offset) query.append('offset', params.offset.toString());
+    return fetchAPI(`/api/subagents?${query.toString()}`);
+  },
+  get: (id: string) => fetchAPI(`/api/subagents/${id}`),
+  getStats: () => fetchAPI('/api/subagents/stats/overview'),
 };

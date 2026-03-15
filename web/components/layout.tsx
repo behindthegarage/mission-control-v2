@@ -10,6 +10,7 @@ import {
   Brain,
   FileText,
   Terminal,
+  Bot,
   ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -35,6 +36,7 @@ const navigation = [
   { name: 'Memories', href: '/memories', icon: Brain },
   { name: 'Documents', href: '/documents', icon: FileText },
   { name: 'Sessions', href: '/sessions', icon: Terminal },
+  { name: 'Sub-Agents', href: '/subagents', icon: Bot },
 ];
 
 function SidebarNav() {
