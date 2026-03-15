@@ -20,6 +20,7 @@ const { initDB } = require('./db');
 const healthRoutes = require('./routes/health');
 const tasksRoutes = require('./routes/tasks');
 const sessionsRoutes = require('./routes/sessions');
+const subagentsRoutes = require('./routes/subagents');
 const projectsRoutes = require('./routes/projects');
 const activityRoutes = require('./routes/activity');
 const documentsRoutes = require('./routes/documents');
@@ -133,4 +134,3 @@ process.on('SIGINT', async () => {
 });
 
 startServer();
-tServer();
