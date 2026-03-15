@@ -43,6 +43,59 @@ export const activityAPI = {
   list: (limit?: number) => fetchAPI(`/api/activity?limit=${limit || 50}`),
 };
 
+// Memories API
+export const memoriesAPI = {
+  list: (params?: { date_from?: string; date_to?: string; search?: string; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.date_from) query.append('date_from', params.date_from);
+    if (params?.date_to) query.append('date_to', params.date_to);
+    if (params?.search) query.append('search', params.search);
+    if (params?.limit) query.append('limit', params.limit.toString());
+    return fetchAPI(`/api/memories?${query.toString()}`);
+  },
+  getByDate: (date: string) => fetchAPI(`/api/memories/${date}`),
+};
+
+// Documents API
+export const documentsAPI = {
+  list: (params?: { category?: string; search?: string; type?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.category) query.append('category', params.category);
+    if (params?.search) query.append('search', params.search);
+    if (params?.type) query.append('type', params.type);
+    return fetchAPI(`/api/documents?${query.toString()}`);
+  },
+  getCategories: () => fetchAPI('/api/documents/categories'),
+  getContent: (path: string) => fetchAPI(`/api/documents/content/${path}`),
+};
+
+// BTG Queue API
+export const btgQueueAPI = {
+  list: (params?: { status?: 'active' | 'resolved' | 'archived' | 'pending'; filter?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.status) query.append('status', params.status);
+    if (params?.filter) query.append('filter', params.filter);
+    return fetchAPI(`/api/btg-queue?${query.toString()}`);
+  },
+  getStats: () => fetchAPI('/api/btg-queue/stats'),
+};
+
+// Calendar API
+export const calendarAPI = {
+  list: (params?: { from?: string; to?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.from) query.append('from', params.from);
+    if (params?.to) query.append('to', params.to);
+    return fetchAPI(`/api/calendar?${query.toString()}`);
+  },
+  getEvents: (start?: string, end?: string) => {
+    const query = new URLSearchParams();
+    if (start) query.append('start', start);
+    if (end) query.append('end', end);
+    return fetchAPI(`/api/calendar/events?${query.toString()}`);
+  },
+};
+
 // Health check
 export const healthAPI = {
   check: () => fetchAPI('/api/health'),

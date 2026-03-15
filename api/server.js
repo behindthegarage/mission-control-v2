@@ -24,6 +24,8 @@ const projectsRoutes = require('./routes/projects');
 const activityRoutes = require('./routes/activity');
 const documentsRoutes = require('./routes/documents');
 const memoriesRoutes = require('./routes/memories');
+const btgQueueRoutes = require('./routes/btg-queue');
+const calendarRoutes = require('./routes/calendar');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -48,6 +50,8 @@ app.use('/api/projects', projectsRoutes);
 app.use('/api/activity', activityRoutes);
 app.use('/api/documents', documentsRoutes);
 app.use('/api/memories', memoriesRoutes);
+app.use('/api/btg-queue', btgQueueRoutes);
+app.use('/api/calendar', calendarRoutes);
 
 // Root API endpoint
 app.get('/api', (req, res) => {
@@ -67,7 +71,9 @@ app.get('/api', (req, res) => {
       projects: 'GET /api/projects',
       activity: 'GET /api/activity',
       documents: 'GET /api/documents',
-      memories: 'GET /api/memories'
+      memories: 'GET /api/memories',
+      btgQueue: 'GET /api/btg-queue',
+      calendar: 'GET /api/calendar'
     }
   });
 });
