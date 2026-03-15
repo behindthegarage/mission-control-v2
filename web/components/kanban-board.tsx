@@ -128,7 +128,7 @@ function KanbanColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        'flex flex-col h-full min-h-[500px] rounded-lg border bg-muted/30',
+        'flex flex-col h-full min-h-[400px] md:min-h-[500px] rounded-lg border bg-muted/30',
         isOver && 'ring-2 ring-primary ring-inset bg-primary/5'
       )}
     >
@@ -141,7 +141,7 @@ function KanbanColumn({
         </div>
       </div>
       
-      <div className="flex-1 p-2 space-y-2">
+      <div className="flex-1 p-2 space-y-2 overflow-y-auto max-h-[60vh] md:max-h-none">
         <SortableContext
           items={tasks.map(t => t.id.toString())}
           strategy={verticalListSortingStrategy}
@@ -246,7 +246,26 @@ export function KanbanBoard({ tasks, onTaskMove, onTaskReorder }: KanbanBoardPro
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Mobile: Horizontal scroll container */}
+      <div className="md:hidden overflow-x-auto pb-4 -mx-4 px-4">
+        <div className="flex gap-4 min-w-max">
+          {columns.map((status) => (
+            <div 
+              key={status} 
+              className="w-[280px] flex-shrink-0"
+            >
+              <KanbanColumn
+                status={status}
+                tasks={tasksByColumn[status] || []}
+                isOver={activeId !== null && activeTask?.status !== status}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Desktop: Grid layout */}
+      <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4">
         {columns.map((status) => (
           <KanbanColumn
             key={status}

@@ -1,0 +1,18 @@
+[Unit]
+Description=Mission Control v2 - OpenClaw Dashboard
+After=network.target
+
+[Service]
+Type=forking
+User=openclaw
+Group=openclaw
+WorkingDirectory=/home/openclaw/mission-control-v2-local
+ExecStart=/home/openclaw/mission-control-v2-local/scripts/start-mission-control.sh
+ExecStop=/home/openclaw/mission-control-v2-local/scripts/stop-mission-control.sh
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

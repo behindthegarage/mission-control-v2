@@ -16,10 +16,13 @@ import {
   ChevronLeft, 
   ChevronRight,
   Tag,
-  Clock
+  Clock,
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 import { memoriesAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const fetcher = (params: any) => memoriesAPI.list(params);
 
@@ -29,7 +32,7 @@ export default function MemoriesPage() {
   const [dateTo, setDateTo] = useState('');
   const [selectedMemory, setSelectedMemory] = useState<any>(null);
   
-  const { data, error, isLoading } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR(
     ['memories', { search, date_from: dateFrom, date_to: dateTo, limit: 100 }],
     () => fetcher({ search, date_from: dateFrom, date_to: dateTo, limit: 100 }),
     { refreshInterval: 60000 }
@@ -178,11 +181,17 @@ export default function MemoriesPage() {
                 ))}
               </div>
             ) : error ? (
-              <Card className="border-destructive">
-                <CardContent className="pt-6">
-                  <p className="text-destructive">Failed to load memories</p>
-                </CardContent>
-              </Card>
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Failed to Load Memories</AlertTitle>
+                <AlertDescription className="flex items-center justify-between">
+                  <span>Unable to fetch memory data.</span>
+                  <Button variant="ghost" size="sm" onClick={() => mutate()}>
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                    Retry
+                  </Button>
+                </AlertDescription>
+              </Alert>
             ) : memories.length === 0 ? (
               <Card>
                 <CardHeader>

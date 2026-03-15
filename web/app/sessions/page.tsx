@@ -18,7 +18,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Terminal, Activity, Search, Clock, Hash, Cpu, ArrowRight } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Terminal, Activity, Search, Clock, Hash, Cpu, ArrowRight, AlertCircle, RefreshCw } from 'lucide-react';
 import { sessionsAPI } from '@/lib/api';
 import { 
   formatRelativeTime, 
@@ -56,10 +57,13 @@ export default function SessionsPage() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
-  const { data, error, isLoading } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR(
     ['sessions', filter, debouncedSearch] as [string, FilterType, string],
     fetcher,
-    { refreshInterval: 10000 }
+    { 
+      refreshInterval: 10000,
+      onError: () => {},
+    }
   );
 
   // Debounce search
@@ -83,11 +87,15 @@ export default function SessionsPage() {
     router.push(`/sessions/${sessionKey}`);
   };
 
+  const handleRetry = () => {
+    mutate();
+  };
+
   return (
     <LayoutWithSidebar>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold">Sessions</h1>
             <p className="text-muted-foreground">
@@ -96,62 +104,77 @@ export default function SessionsPage() {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-4">
+        {/* Stats Cards - Responsive Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Sessions</CardTitle>
+              <CardTitle className="text-xs sm:text-sm font-medium">Active</CardTitle>
               <Activity className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{isLoading ? '-' : stats.active}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-xl sm:text-2xl font-bold">{isLoading ? '-' : stats.active}</div>
+              <p className="text-xs text-muted-foreground hidden sm:block">
                 Currently running
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Sessions</CardTitle>
+              <CardTitle className="text-xs sm:text-sm font-medium">Total</CardTitle>
               <Terminal className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{isLoading ? '-' : data?.total || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                In selected period
+              <div className="text-xl sm:text-2xl font-bold">{isLoading ? '-' : data?.total || 0}</div>
+              <p className="text-xs text-muted-foreground hidden sm:block">
+                In period
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Messages</CardTitle>
+              <CardTitle className="text-xs sm:text-sm font-medium">Messages</CardTitle>
               <Hash className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{isLoading ? '-' : formatTokens(stats.totalMessages)}</div>
-              <p className="text-xs text-muted-foreground">
-                Total exchanged
+              <div className="text-xl sm:text-2xl font-bold">{isLoading ? '-' : formatTokens(stats.totalMessages)}</div>
+              <p className="text-xs text-muted-foreground hidden sm:block">
+                Exchanged
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Models</CardTitle>
+              <CardTitle className="text-xs sm:text-sm font-medium">Models</CardTitle>
               <Cpu className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{isLoading ? '-' : stats.uniqueModels}</div>
-              <p className="text-xs text-muted-foreground">
-                Different AI models
+              <div className="text-xl sm:text-2xl font-bold">{isLoading ? '-' : stats.uniqueModels}</div>
+              <p className="text-xs text-muted-foreground hidden sm:block">
+                AI models
               </p>
             </CardContent>
           </Card>
         </div>
 
+        {/* Error Alert */}
+        {error && (
+          <Alert variant="destructive" className="animate-in fade-in">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Failed to Load Sessions</AlertTitle>
+            <AlertDescription className="flex items-center justify-between">
+              <span>Unable to fetch session data from the API.</span>
+              <Button variant="ghost" size="sm" onClick={handleRetry}>
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Retry
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Filter Tabs & Search */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4">
           <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterType)}>
-            <TabsList>
+            <TabsList className="flex-wrap h-auto">
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="active">Active</TabsTrigger>
               <TabsTrigger value="recent24h">24h</TabsTrigger>
@@ -160,7 +183,7 @@ export default function SessionsPage() {
             </TabsList>
           </Tabs>
           
-          <div className="relative w-full sm:w-72">
+          <div className="relative w-full">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search sessions..."
@@ -171,19 +194,13 @@ export default function SessionsPage() {
           </div>
         </div>
 
-        {/* Sessions Table */}
+        {/* Sessions Table - Mobile optimized */}
         {isLoading ? (
           <div className="space-y-2">
             {[1, 2, 3, 4, 5].map((i) => (
-              <Skeleton key={i} className="h-12" />
+              <Skeleton key={i} className="h-16 sm:h-12" />
             ))}
           </div>
-        ) : error ? (
-          <Card className="border-destructive">
-            <CardContent className="pt-6">
-              <p className="text-destructive">Failed to load sessions</p>
-            </CardContent>
-          </Card>
         ) : sessions.length === 0 ? (
           <Card>
             <CardHeader>
@@ -201,18 +218,16 @@ export default function SessionsPage() {
             </CardContent>
           </Card>
         ) : (
-          <Card>
+          <Card className="overflow-hidden">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Status</TableHead>
+                    <TableHead className="w-[80px]">Status</TableHead>
                     <TableHead>Session</TableHead>
-                    <TableHead>Model</TableHead>
-                    <TableHead>Started</TableHead>
-                    <TableHead>Duration</TableHead>
-                    <TableHead>Messages</TableHead>
-                    <TableHead>Tools</TableHead>
+                    <TableHead className="hidden sm:table-cell">Model</TableHead>
+                    <TableHead className="hidden md:table-cell">Started</TableHead>
+                    <TableHead className="hidden lg:table-cell">Duration</TableHead>
                     <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -226,24 +241,33 @@ export default function SessionsPage() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {session.status === 'active' && (
-                            <Activity className="h-3 w-3 text-green-500 animate-pulse" />
+                            <Activity className="h-3 w-3 text-green-500 animate-pulse flex-shrink-0" />
                           )}
-                          <Badge variant={sessionStatusVariants[session.status] || 'secondary'}>
+                          <Badge variant={sessionStatusVariants[session.status] || 'secondary'} className="text-xs whitespace-nowrap">
                             {session.status}
                           </Badge>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-medium truncate max-w-[200px]">
-                            {session.label || 'Untitled Session'}
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-medium truncate max-w-[150px] sm:max-w-[200px]">
+                            {session.label || 'Untitled'}
                           </span>
                           <span className="text-xs text-muted-foreground font-mono">
                             {session.session_key.slice(0, 8)}...
                           </span>
+                          {/* Mobile-only info */}
+                          <div className="sm:hidden text-xs text-muted-foreground mt-1">
+                            {session.model && (
+                              <span className="flex items-center gap-1">
+                                <span className={`inline-block w-1.5 h-1.5 rounded-full ${getModelColor(session.model)}`} />
+                                {session.model}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden sm:table-cell">
                         {session.model && (
                           <div className="flex items-center gap-2">
                             <span className={`inline-block w-2 h-2 rounded-full ${getModelColor(session.model)}`} />
@@ -251,25 +275,15 @@ export default function SessionsPage() {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="h-3 w-3" />
+                          <Clock className="h-3 w-3 flex-shrink-0" />
                           {formatRelativeTime(session.started_at)}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden lg:table-cell">
                         <span className="text-sm text-muted-foreground">
                           {formatDuration(session.duration_ms)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm font-medium">
-                          {session.message_count || '-'}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground">
-                          {session.tool_calls || '-'}
                         </span>
                       </TableCell>
                       <TableCell>
