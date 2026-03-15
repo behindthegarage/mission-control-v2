@@ -1,0 +1,19 @@
+{
+  "name": "mission-control-v2-collector",
+  "version": "1.0.0",
+  "description": "Mission Control v2 Data Collector - Polls OpenClaw CLI",
+  "main": "collector.js",
+  "scripts": {
+    "start": "node collector.js",
+    "dev": "nodemon collector.js"
+  },
+  "dependencies": {
+    "sqlite3": "^5.1.6"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "keywords": ["openclaw", "mission-control", "collector"],
+  "author": "Hari",
+  "license": "MIT"
+}

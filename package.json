@@ -1,0 +1,19 @@
+{
+  "name": "mission-control-v2",
+  "version": "1.0.0",
+  "description": "Mission Control v2 - OpenClaw Dashboard (Local Only)",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:collector\" \"npm run dev:web\"",
+    "dev:api": "cd api && npm run dev",
+    "dev:collector": "sleep 2 && cd collector && npm start",
+    "dev:web": "sleep 3 && cd web && npm run dev",
+    "install:all": "npm install && cd api && npm install && cd ../collector && npm install && cd ../web && npm install",
+    "build": "cd web && npm run build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": ["openclaw", "mission-control", "dashboard"],
+  "author": "Hari",
+  "license": "MIT"
+}
