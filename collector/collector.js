@@ -98,7 +98,7 @@ async function collectSessions() {
   try {
     console.log('[Collector] Collecting sessions...');
     
-    const result = await runOpenClawCommand('sessions list');
+    const result = await runOpenClawCommand('sessions --json');
     if (!result || !result.sessions) {
       console.log('[Collector] No sessions found');
       return;
@@ -107,21 +107,20 @@ async function collectSessions() {
     const sessions = Array.isArray(result) ? result : result.sessions || [];
     
     for (const session of sessions) {
+      // Map OpenClaw session format to our database format
+      const sessionKey = session.key;
+      const label = sessionKey?.split(':').pop() || 'Untitled';
+      const status = session.abortedLastRun ? 'aborted' : 'active';
+      const model = session.modelProvider ? `${session.modelProvider}/${session.model}` : session.model;
+      const modelRequested = session.modelProvider ? `${session.modelProvider}/${session.model}` : session.model;
+      const startedAt = session.updatedAt ? new Date(session.updatedAt).toISOString() : new Date().toISOString();
+      const channel = session.kind || 'unknown';
+      
       // Check if session exists
       const existing = await db.get(
         'SELECT id FROM sessions WHERE session_key = ?',
-        [session.id || session.session_key]
+        [sessionKey]
       );
-      
-      const sessionData = {
-        key: session.id || session.session_key,
-        label: session.label || session.name || 'Untitled',
-        status: session.status || 'active',
-        model: session.model,
-        model_requested: session.model_requested,
-        started_at: session.started_at || session.created_at,
-        channel: session.channel
-      };
       
       if (existing) {
         await db.run(
@@ -129,18 +128,16 @@ async function collectSessions() {
             label = ?, status = ?, model = ?, model_requested = ?, channel = ?,
             updated_at = CURRENT_TIMESTAMP
            WHERE session_key = ?`,
-          [sessionData.label, sessionData.status, sessionData.model, 
-           sessionData.model_requested, sessionData.channel, sessionData.key]
+          [label, status, model, modelRequested, channel, sessionKey]
         );
       } else {
         await db.run(
           `INSERT INTO sessions (session_key, label, status, model, model_requested, started_at, channel)
            VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [sessionData.key, sessionData.label, sessionData.status, sessionData.model,
-           sessionData.model_requested, sessionData.started_at, sessionData.channel]
+          [sessionKey, label, status, model, modelRequested, startedAt, channel]
         );
         
-        console.log(`[Collector] New session: ${sessionData.label}`);
+        console.log(`[Collector] New session: ${label}`);
       }
     }
     
