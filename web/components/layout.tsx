@@ -162,7 +162,7 @@ function MobileNav({ pathname }: { pathname: string }) {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger>
+      <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="md:hidden">
           <LayoutDashboard className="h-5 w-5" />
           <span className="sr-only">Open menu</span>

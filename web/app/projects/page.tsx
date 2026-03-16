@@ -364,7 +364,7 @@ function BTGQueueView({
   return (
     <div className="space-y-2">
       {items.map((item: any) => (
-        <Card key={item.id} className="hover:border-primary/50 transition-colors">
+        <Card key={`${item.id}-${item.topic?.slice(0, 20)}`} className="hover:border-primary/50 transition-colors">
           <CardContent className="p-4">
             <div className="flex items-start gap-4">
               <div className="flex-1">
